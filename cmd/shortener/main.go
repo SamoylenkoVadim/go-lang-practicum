@@ -10,7 +10,7 @@ import (
 
 func main() {
 	storage := storage.New()
-	handlers := handlers.New(storage)
-	router := routers.NewRouter(handlers)
+	handlers, _ := handlers.New(storage)
+	router, _ := routers.NewRouter(handlers)
 	http.ListenAndServe(cfg.AddressPort, router)
 }

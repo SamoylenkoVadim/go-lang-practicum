@@ -2,15 +2,14 @@ package handlers_test
 
 import (
 	"bytes"
-	cfg "github.com/SamoylenkoVadim/golang-practicum/internal/app/configs"
 	"github.com/SamoylenkoVadim/golang-practicum/internal/app/handlers"
 	"github.com/SamoylenkoVadim/golang-practicum/internal/app/routers"
 	"github.com/SamoylenkoVadim/golang-practicum/internal/app/storage"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -33,8 +32,8 @@ func testRequest(t *testing.T, ts *httptest.Server, client *http.Client, method,
 func TestRouter(t *testing.T) {
 
 	s := storage.New()
-	h := handlers.New(s)
-	router := routers.NewRouter(h)
+	h, _ := handlers.New(s)
+	router, _ := routers.NewRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()
 
@@ -45,7 +44,7 @@ func TestRouter(t *testing.T) {
 	}
 
 	initStorageLink := "http://yandex.ru"
-	s.SaveToStorage("id1", initStorageLink)
+	s.Save("id1", initStorageLink)
 
 	tests := []struct {
 		name                string
@@ -118,15 +117,15 @@ func TestRouter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp, body := testRequest(t, ts, client, tt.method, tt.path, tt.body)
-			assert.Equal(t, tt.statusWant, resp.StatusCode)
+			require.Equal(t, tt.statusWant, resp.StatusCode)
 
 			if tt.checkBodyResp {
-				linkFromStorage, _ := s.GetValueFromStorageByKey(body[len(body)-cfg.BaseLength:])
-				assert.Equal(t, tt.body, linkFromStorage)
+				_, err := url.ParseRequestURI(body)
+				require.NoError(t, err)
 			}
 
 			if tt.checkLocationHeader {
-				assert.Equal(t, initStorageLink, resp.Header.Get("Location"))
+				require.Equal(t, initStorageLink, resp.Header.Get("Location"))
 			}
 			defer resp.Body.Close()
 		})
